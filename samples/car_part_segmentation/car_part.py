@@ -95,12 +95,13 @@ def preprocess_dataset(images_path, images_annotations_files):
     return results, parts_idx
 
 
-def prepare_datasets(images_path, images_annotations_files, train_perc=0.7, val_perc=0.8):
+def prepare_datasets(images_path, images_annotations_files, train_perc=0.9, val_perc=1.0):
 
     inputs_outputs, parts_idx_dict = preprocess_dataset(images_path, images_annotations_files)
 
     train_split = int(len(inputs_outputs) * train_perc)
     val_split = int(len(inputs_outputs) * val_perc)
+    print(f'train size {train_split}, test size {val_split}')
 
     dataset_train = CarPartDataset()
     dataset_train.load_dataset(parts_idx_dict, inputs_outputs[:train_split])
@@ -194,7 +195,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     model_checkpoints = args.checkpoint
-    print('checkointing models in folder {}'.format(model_checkpoints))
+    print('checkpointing models in folder {}'.format(model_checkpoints))
 
     images_path = Path(args.images_path)
     annotations_path = Path(args.annotations_path).glob('*.mat')

@@ -54,7 +54,7 @@ def process_annotation(annotation_path):
 def preprocess_dataset(images_path, images_annotations_files):
     images_path = Path(images_path)
 
-    parts_idx = dict()
+    parts_name_idx = dict()
     id = 1
 
     results = []
@@ -77,10 +77,11 @@ def preprocess_dataset(images_path, images_annotations_files):
                     for part in obj['parts']:
                         #add the part name
                         part_name = part['part_name']
-                        if part_name not in parts_idx:
-                            parts_idx[part_name] = id
+                        if part_name not in parts_name_idx:
+                            parts_name_idx[part_name] = id
                             id += 1
-                        to_predict_classes.append(parts_idx[part_name])
+                        # add the id of the class to the mask
+                        to_predict_classes.append(parts_name_idx[part_name])
                         #add the mask
                         mask = part['mask'].astype(bool)
                         to_predict_masks.append(mask)
@@ -92,7 +93,7 @@ def preprocess_dataset(images_path, images_annotations_files):
 
             results.append((file_name, image_path, to_predict_masks, to_predict_classes))
 
-    return results, parts_idx
+    return results, parts_name_idx
 
 
 def prepare_datasets(images_path, images_annotations_files, train_perc=0.9, val_perc=1.0):
@@ -121,7 +122,7 @@ class CarPartConfig(Config):
     NAME = 'car_parts'
 
     GPU_COUNT = 1
-    IMAGES_PER_GPU = 1
+    IMAGES_PER_GPU = 4
 
     # Number of classes (including background)
     NUM_CLASSES = 31  # 26 parts
@@ -186,7 +187,7 @@ if __name__ == '__main__':
     parser.add_argument('--annotations_path', required=True,
         metavar="/path/to/balloon/annotations/",
         help='The directory to load the annotations')
-    parser.add_argument('--weights', required=True,
+    parser.add_argument('--weights', required=False,
         help='the weights that can be used, values: imagenet or last')
     parser.add_argument('--checkpoint', required=True,
         help='the folder where the checkpoints are saved')
@@ -231,26 +232,26 @@ if __name__ == '__main__':
         else:
             model.load_weights(model.find_last(), by_name=True)
 
-        print("Training network heads")
-        model.train(dataset_val, dataset_val,
-                learning_rate=config.LEARNING_RATE,
-                epochs=10,
-                layers='heads')
+        # print("Training network heads")
+        # model.train(dataset_val, dataset_val,
+        #         learning_rate=config.LEARNING_RATE,
+        #         epochs=10,
+        #         layers='heads')
 
         #Training - Stage 2
         #Finetune layers from ResNet stage 4 and up
         print("Fine tune Resnet stage 4 and up")
         model.train(dataset_val, dataset_val,
-                    learning_rate=config.LEARNING_RATE,
-                    epochs=30,
+                    learning_rate=config.LEARNING_RATE  / 10,
+                    epochs=120,
                     layers='4+',
                     augmentation=augmentation)
 
         # Training - Stage 3
         # Fine tune all layers
-        print("Fine tune all layers")
-        model.train(dataset_val, dataset_val,
-                    learning_rate=config.LEARNING_RATE / 10,
-                    epochs=40,
-                    layers='all',
-                    augmentation=augmentation)
+        # print("Fine tune all layers")
+        # model.train(dataset_val, dataset_val,
+        #             learning_rate=config.LEARNING_RATE / 10,
+        #             epochs=50,
+        #             layers='all',
+        #             augmentation=augmentation)

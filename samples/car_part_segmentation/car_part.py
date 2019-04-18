@@ -210,7 +210,7 @@ if __name__ == '__main__':
     config = CarPartConfig()
     print(config.display())
 
-    seq = iaa.OneOf([
+    augmentation = iaa.OneOf([
         iaa.Noop(),
         iaa.Fliplr(0.5),
         iaa.Flipud(0.5),

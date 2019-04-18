@@ -19,13 +19,13 @@ import matplotlib.pyplot as plt
 from matplotlib import patches,  lines
 from matplotlib.patches import Polygon
 import IPython.display
+from mrcnn import utils
 
 # Root directory of the project
 ROOT_DIR = os.path.abspath("../")
 
 # Import Mask RCNN
 sys.path.append(ROOT_DIR)  # To find local version of the library
-from mrcnn import utils
 
 
 ############################################################
@@ -69,6 +69,18 @@ def random_colors(N, bright=True):
     return colors
 
 
+def generate_colormap(nelems, scaled=True, bright=True):
+    # Generate colors for drawing bounding boxes.
+    brightness = 1. if bright else .7
+    hsv_tuples = [(x / nelems, 1., brightness) for x in range(nelems)]
+    colors = [colorsys.hsv_to_rgb(*x) for x in hsv_tuples]
+    if scaled:
+        colors = [(int(x[0] * 255), int(x[1] * 255), int(x[2] * 255))
+                  for x in colors]
+    random.shuffle(colors)
+    return colors
+
+
 def apply_mask(image, mask, color, alpha=0.5):
     """Apply the given mask to the image.
     """
@@ -80,11 +92,11 @@ def apply_mask(image, mask, color, alpha=0.5):
     return image
 
 
-def display_instances(image, boxes, masks, class_ids, class_names,
+def display_instances(image, boxes, masks, class_ids, class_names, colors=None,
                       scores=None, title="",
                       figsize=(16, 16), ax=None,
                       show_mask=True, show_bbox=True,
-                      colors=None, captions=None):
+                      captions=None):
     """
     boxes: [num_instance, (y1, x1, y2, x2, class_id)] in image coordinates.
     masks: [height, width, num_instances]
@@ -109,9 +121,6 @@ def display_instances(image, boxes, masks, class_ids, class_names,
     if not ax:
         _, ax = plt.subplots(1, figsize=figsize)
         auto_show = True
-
-    # Generate random colors
-    colors = colors or random_colors(N)
 
     # Show area outside image boundaries.
     height, width = image.shape[:2]

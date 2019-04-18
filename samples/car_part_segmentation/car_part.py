@@ -1,3 +1,5 @@
+from mrcnn import utils
+from mrcnn.config import Config
 import os
 import sys
 import random
@@ -19,13 +21,12 @@ ROOT_DIR = os.path.abspath("../../")
 
 # Import Mask RCNN
 sys.path.append(ROOT_DIR)  # To find local version of the library
-from mrcnn.config import Config
-from mrcnn import utils
+
 
 def process_annotation(annotation_path):
     # print(annotation_path)
     annotations = sio.loadmat(annotation_path)['anno']
-    objects = annotations[0,0]['objects']
+    objects = annotations[0, 0]['objects']
 
     # list containing all the objects in the image
     objects_list = []
@@ -46,7 +47,8 @@ def process_annotation(annotation_path):
 
             parts_list.append({'part_name': part_name, 'mask': part_mask})
 
-        objects_list.append({'class_name': classname, 'mask': mask, "parts": parts_list})
+        objects_list.append(
+            {'class_name': classname, 'mask': mask, "parts": parts_list})
 
     return objects_list
 
@@ -60,10 +62,10 @@ def preprocess_dataset(images_path, images_annotations_files):
     results = []
 
     for ann_path in tqdm(images_annotations_files):
-        #process the annotations
+        # process the annotations
         img_objects = process_annotation(ann_path)
 
-        #get the image path
+        # get the image path
         file_name = ann_path.name.replace('mat', 'jpg')
         image_path = images_path / file_name
 
@@ -75,29 +77,31 @@ def preprocess_dataset(images_path, images_annotations_files):
                 # get the car parts
                 if 'parts' in obj:
                     for part in obj['parts']:
-                        #add the part name
+                        # add the part name
                         part_name = part['part_name']
                         if part_name not in parts_idx:
                             parts_idx[part_name] = id
                             id += 1
                         to_predict_classes.append(parts_idx[part_name])
-                        #add the mask
+                        # add the mask
                         mask = part['mask'].astype(bool)
                         to_predict_masks.append(mask)
 
         if len(to_predict_classes):
-            #reshape the masks as an unique array
+            # reshape the masks as an unique array
             to_predict_masks = np.array(to_predict_masks)
             to_predict_masks = np.moveaxis(to_predict_masks, 0, -1)
 
-            results.append((file_name, image_path, to_predict_masks, to_predict_classes))
+            results.append(
+                (file_name, image_path, to_predict_masks, to_predict_classes))
 
     return results, parts_idx
 
 
 def prepare_datasets(images_path, images_annotations_files, train_perc=0.7, val_perc=0.8):
 
-    inputs_outputs, parts_idx_dict = preprocess_dataset(images_path, images_annotations_files)
+    inputs_outputs, parts_idx_dict = preprocess_dataset(
+        images_path, images_annotations_files)
 
     train_split = int(len(inputs_outputs) * train_perc)
     val_split = int(len(inputs_outputs) * val_perc)
@@ -106,7 +110,8 @@ def prepare_datasets(images_path, images_annotations_files, train_perc=0.7, val_
     dataset_train.load_dataset(parts_idx_dict, inputs_outputs[:train_split])
     dataset_train.prepare()
     dataset_val = CarPartDataset()
-    dataset_val.load_dataset(parts_idx_dict, inputs_outputs[train_split:val_split])
+    dataset_val.load_dataset(
+        parts_idx_dict, inputs_outputs[train_split:val_split])
     dataset_val.prepare()
 
     dataset_test = CarPartDataset()
@@ -150,7 +155,7 @@ class CarPartDataset(utils.Dataset):
             self.add_class('car_parts', i, part_name)
 
         for file_name, image_path, masks, classes in preprocessed_images:
-            #add all the classes classes
+            # add all the classes classes
             self.add_image(
                 "car_parts",
                 image_id=file_name,
@@ -159,16 +164,14 @@ class CarPartDataset(utils.Dataset):
                 classes=np.array(classes)
             )
 
-
     def load_mask(self, image_id):
-        #load all the masks from the image id
+        # load all the masks from the image id
         info = self.image_info[image_id]
         return info['masks'], info['classes']
 
     def image_reference(self, image_id):
         info = self.image_info[image_id]
         return info['path']
-
 
 
 if __name__ == '__main__':
@@ -180,15 +183,15 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='Train Mask R-CNN to detect car parts')
     parser.add_argument('--images_path', required=True,
-        metavar="/path/to/balloon/images/",
-        help='The directory to load the images')
+                        metavar="/path/to/balloon/images/",
+                        help='The directory to load the images')
     parser.add_argument('--annotations_path', required=True,
-        metavar="/path/to/balloon/annotations/",
-        help='The directory to load the annotations')
+                        metavar="/path/to/balloon/annotations/",
+                        help='The directory to load the annotations')
     parser.add_argument('--weights', required=True,
-        help='the weights that can be used, values: imagenet or last')
+                        help='the weights that can be used, values: imagenet or last')
     parser.add_argument('--checkpoint', required=True,
-        help='the folder where the checkpoints are saved')
+                        help='the folder where the checkpoints are saved')
     # parser.
 
     args = parser.parse_args()
@@ -221,7 +224,7 @@ if __name__ == '__main__':
     ])
 
     with tf.device('/gpu:0'):
-    # Create model in training mode
+        # Create model in training mode
         model = modellib.MaskRCNN(mode="training", config=config,
                                   model_dir=model_checkpoints)
 
@@ -232,12 +235,12 @@ if __name__ == '__main__':
 
         print("Training network heads")
         model.train(dataset_val, dataset_val,
-                learning_rate=config.LEARNING_RATE,
-                epochs=10,
-                layers='heads')
+                    learning_rate=config.LEARNING_RATE,
+                    epochs=10,
+                    layers='heads')
 
-        #Training - Stage 2
-        #Finetune layers from ResNet stage 4 and up
+        # Training - Stage 2
+        # Finetune layers from ResNet stage 4 and up
         print("Fine tune Resnet stage 4 and up")
         model.train(dataset_val, dataset_val,
                     learning_rate=config.LEARNING_RATE,

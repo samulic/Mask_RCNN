@@ -1,3 +1,5 @@
+from mrcnn import model as modellib, utils
+from mrcnn.config import Config
 """
 Mask R-CNN
 Configurations and data loading code for MS COCO.
@@ -52,8 +54,6 @@ ROOT_DIR = os.path.abspath("../../")
 
 # Import Mask RCNN
 sys.path.append(ROOT_DIR)  # To find local version of the library
-from mrcnn.config import Config
-from mrcnn import model as modellib, utils
 
 # Path to trained weights file
 COCO_MODEL_PATH = os.path.join(ROOT_DIR, "mask_rcnn_coco.h5")
@@ -108,7 +108,8 @@ class CocoDataset(utils.Dataset):
         if auto_download is True:
             self.auto_download(dataset_dir, subset, year)
 
-        coco = COCO("{}/annotations/instances_{}{}.json".format(dataset_dir, subset, year))
+        coco = COCO(
+            "{}/annotations/instances_{}{}.json".format(dataset_dir, subset, year))
         if subset == "minival" or subset == "valminusminival":
             subset = "val"
         image_dir = "{}/{}{}".format(dataset_dir, subset, year)
@@ -159,11 +160,13 @@ class CocoDataset(utils.Dataset):
         if dataType == "minival" or dataType == "valminusminival":
             imgDir = "{}/{}{}".format(dataDir, "val", dataYear)
             imgZipFile = "{}/{}{}.zip".format(dataDir, "val", dataYear)
-            imgURL = "http://images.cocodataset.org/zips/{}{}.zip".format("val", dataYear)
+            imgURL = "http://images.cocodataset.org/zips/{}{}.zip".format(
+                "val", dataYear)
         else:
             imgDir = "{}/{}{}".format(dataDir, dataType, dataYear)
             imgZipFile = "{}/{}{}.zip".format(dataDir, dataType, dataYear)
-            imgURL = "http://images.cocodataset.org/zips/{}{}.zip".format(dataType, dataYear)
+            imgURL = "http://images.cocodataset.org/zips/{}{}.zip".format(
+                dataType, dataYear)
         # print("Image paths:"); print(imgDir); print(imgZipFile); print(imgURL)
 
         # Create main folder if it doesn't exist yet
@@ -191,14 +194,18 @@ class CocoDataset(utils.Dataset):
             annURL = "https://dl.dropboxusercontent.com/s/o43o90bna78omob/instances_minival2014.json.zip?dl=0"
             unZipDir = annDir
         elif dataType == "valminusminival":
-            annZipFile = "{}/instances_valminusminival2014.json.zip".format(dataDir)
+            annZipFile = "{}/instances_valminusminival2014.json.zip".format(
+                dataDir)
             annFile = "{}/instances_valminusminival2014.json".format(annDir)
             annURL = "https://dl.dropboxusercontent.com/s/s3tw5zcg7395368/instances_valminusminival2014.json.zip?dl=0"
             unZipDir = annDir
         else:
-            annZipFile = "{}/annotations_trainval{}.zip".format(dataDir, dataYear)
-            annFile = "{}/instances_{}{}.json".format(annDir, dataType, dataYear)
-            annURL = "http://images.cocodataset.org/annotations/annotations_trainval{}.zip".format(dataYear)
+            annZipFile = "{}/annotations_trainval{}.zip".format(
+                dataDir, dataYear)
+            annFile = "{}/instances_{}{}.json".format(
+                annDir, dataType, dataYear)
+            annURL = "http://images.cocodataset.org/annotations/annotations_trainval{}.zip".format(
+                dataYear)
             unZipDir = dataDir
         # print("Annotations paths:"); print(annDir); print(annFile); print(annZipFile); print(annURL)
 
@@ -256,7 +263,8 @@ class CocoDataset(utils.Dataset):
                     # For crowd masks, annToMask() sometimes returns a mask
                     # smaller than the given dimensions. If so, resize it.
                     if m.shape[0] != image_info["height"] or m.shape[1] != image_info["width"]:
-                        m = np.ones([image_info["height"], image_info["width"]], dtype=bool)
+                        m = np.ones(
+                            [image_info["height"], image_info["width"]], dtype=bool)
                 instance_masks.append(m)
                 class_ids.append(class_id)
 
@@ -478,15 +486,18 @@ if __name__ == '__main__':
         # Training dataset. Use the training set and 35K from the
         # validation set, as as in the Mask RCNN paper.
         dataset_train = CocoDataset()
-        dataset_train.load_coco(args.dataset, "train", year=args.year, auto_download=args.download)
+        dataset_train.load_coco(args.dataset, "train",
+                                year=args.year, auto_download=args.download)
         if args.year in '2014':
-            dataset_train.load_coco(args.dataset, "valminusminival", year=args.year, auto_download=args.download)
+            dataset_train.load_coco(
+                args.dataset, "valminusminival", year=args.year, auto_download=args.download)
         dataset_train.prepare()
 
         # Validation dataset
         dataset_val = CocoDataset()
         val_type = "val" if args.year in '2017' else "minival"
-        dataset_val.load_coco(args.dataset, val_type, year=args.year, auto_download=args.download)
+        dataset_val.load_coco(args.dataset, val_type,
+                              year=args.year, auto_download=args.download)
         dataset_val.prepare()
 
         # Image Augmentation
@@ -525,7 +536,8 @@ if __name__ == '__main__':
         # Validation dataset
         dataset_val = CocoDataset()
         val_type = "val" if args.year in '2017' else "minival"
-        coco = dataset_val.load_coco(args.dataset, val_type, year=args.year, return_coco=True, auto_download=args.download)
+        coco = dataset_val.load_coco(
+            args.dataset, val_type, year=args.year, return_coco=True, auto_download=args.download)
         dataset_val.prepare()
         print("Running COCO evaluation on {} images.".format(args.limit))
         evaluate_coco(model, dataset_val, coco, "bbox", limit=int(args.limit))

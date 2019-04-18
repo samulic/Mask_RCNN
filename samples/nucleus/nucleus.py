@@ -1,3 +1,14 @@
+from mrcnn import visualize
+from mrcnn import model as modellib
+from mrcnn import utils
+from mrcnn.config import Config
+from imgaug import augmenters as iaa
+import skimage.io
+import numpy as np
+import datetime
+import json
+import sys
+import os
 """
 Mask R-CNN
 Train on the nuclei segmentation dataset from the
@@ -35,23 +46,12 @@ if __name__ == '__main__':
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt
 
-import os
-import sys
-import json
-import datetime
-import numpy as np
-import skimage.io
-from imgaug import augmenters as iaa
 
 # Root directory of the project
 ROOT_DIR = os.path.abspath("../../")
 
 # Import Mask RCNN
 sys.path.append(ROOT_DIR)  # To find local version of the library
-from mrcnn.config import Config
-from mrcnn import utils
-from mrcnn import model as modellib
-from mrcnn import visualize
 
 # Path to trained weights file
 COCO_WEIGHTS_PATH = os.path.join(ROOT_DIR, "mask_rcnn_coco.h5")
@@ -199,7 +199,8 @@ class NucleusDataset(utils.Dataset):
         # "val": use hard-coded list above
         # "train": use data from stage1_train minus the hard-coded list above
         # else: use the data from the specified sub-directory
-        assert subset in ["train", "val", "stage1_train", "stage1_test", "stage2_test"]
+        assert subset in ["train", "val",
+                          "stage1_train", "stage1_test", "stage2_test"]
         subset_dir = "stage1_train" if subset in ["train", "val"] else subset
         dataset_dir = os.path.join(dataset_dir, subset_dir)
         if subset == "val":
@@ -226,13 +227,15 @@ class NucleusDataset(utils.Dataset):
         """
         info = self.image_info[image_id]
         # Get mask directory from image path
-        mask_dir = os.path.join(os.path.dirname(os.path.dirname(info['path'])), "masks")
+        mask_dir = os.path.join(os.path.dirname(
+            os.path.dirname(info['path'])), "masks")
 
         # Read mask files from .png image
         mask = []
         for f in next(os.walk(mask_dir))[2]:
             if f.endswith(".png"):
-                m = skimage.io.imread(os.path.join(mask_dir, f)).astype(np.bool)
+                m = skimage.io.imread(os.path.join(
+                    mask_dir, f)).astype(np.bool)
                 mask.append(m)
         mask = np.stack(mask, axis=-1)
         # Return mask, and array of class IDs of each instance. Since we have
@@ -325,7 +328,8 @@ def rle_decode(rle, shape):
     mask = np.zeros([shape[0] * shape[1]], np.bool)
     for s, e in rle:
         assert 0 <= s < mask.shape[0]
-        assert 1 <= e <= mask.shape[0], "shape: {}  s {}  e {}".format(shape, s, e)
+        assert 1 <= e <= mask.shape[0], "shape: {}  s {}  e {}".format(
+            shape, s, e)
         mask[s:e] = 1
     # Reshape and transpose
     mask = mask.reshape([shape[1], shape[0]]).T
@@ -391,7 +395,8 @@ def detect(model, dataset_dir, subset):
             dataset.class_names, r['scores'],
             show_bbox=False, show_mask=False,
             title="Predictions")
-        plt.savefig("{}/{}.png".format(submit_dir, dataset.image_info[image_id]["id"]))
+        plt.savefig("{}/{}.png".format(submit_dir,
+                                       dataset.image_info[image_id]["id"]))
 
     # Save to csv file
     submission = "ImageId,EncodedPixels\n" + "\n".join(submission)

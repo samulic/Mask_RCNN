@@ -10,6 +10,7 @@ import tensorflow as tf
 import mrcnn.model as modellib
 import imgaug.augmenters as iaa
 from tqdm import tqdm
+import json
 
 
 np.random.seed = 42
@@ -56,8 +57,31 @@ def process_annotation(annotation_path):
 def preprocess_dataset(images_path, images_annotations_files):
     images_path = Path(images_path)
 
-    parts_idx = dict()
-    id = 1
+    parts_set = set()
+
+
+    # iterate to create the parts set
+    for ann_path in tqdm(images_annotations_files):
+        # process the annotations
+        img_objects = process_annotation(ann_path)
+
+        # get the image path
+        file_name = ann_path.name.replace('mat', 'jpg')
+        image_path = images_path / file_name
+
+        for obj in img_objects:
+            if obj['class_name'] == 'car':
+                # get the car parts
+                if 'parts' in obj:
+                    for part in obj['parts']:
+                        # add the part name
+                        part_name = part['part_name']
+                        parts_set.add(part_name)
+
+    # transform to a dictionary of sorted part names
+    parts_list = sorted(list(parts_set))
+    idx_parts = dict(enumerate(parts_list, 1))
+    parts_idx = {v: k for k, v in idx_parts.items()}
 
     results = []
 
@@ -79,9 +103,6 @@ def preprocess_dataset(images_path, images_annotations_files):
                     for part in obj['parts']:
                         # add the part name
                         part_name = part['part_name']
-                        if part_name not in parts_idx:
-                            parts_idx[part_name] = id
-                            id += 1
                         to_predict_classes.append(parts_idx[part_name])
                         # add the mask
                         mask = part['mask'].astype(bool)
@@ -102,6 +123,9 @@ def prepare_datasets(images_path, images_annotations_files, train_perc=0.7, val_
 
     inputs_outputs, parts_idx_dict = preprocess_dataset(
         images_path, images_annotations_files)
+
+    with open('./part_idx.json', 'w') as f:
+        json.dumps(parts_idx_dict, f)
 
     train_split = int(len(inputs_outputs) * train_perc)
     val_split = int(len(inputs_outputs) * val_perc)
@@ -236,7 +260,7 @@ if __name__ == '__main__':
         print("Training network heads")
         model.train(dataset_val, dataset_val,
                     learning_rate=config.LEARNING_RATE,
-                    epochs=10,
+                    epochs=40,
                     layers='heads')
 
         # Training - Stage 2
@@ -244,7 +268,7 @@ if __name__ == '__main__':
         print("Fine tune Resnet stage 4 and up")
         model.train(dataset_val, dataset_val,
                     learning_rate=config.LEARNING_RATE,
-                    epochs=30,
+                    epochs=120,
                     layers='4+',
                     augmentation=augmentation)
 
@@ -253,6 +277,6 @@ if __name__ == '__main__':
         print("Fine tune all layers")
         model.train(dataset_val, dataset_val,
                     learning_rate=config.LEARNING_RATE / 10,
-                    epochs=40,
+                    epochs=160,
                     layers='all',
                     augmentation=augmentation)

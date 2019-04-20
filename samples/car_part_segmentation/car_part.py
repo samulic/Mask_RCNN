@@ -107,13 +107,13 @@ def preprocess_dataset(images_path, images_annotations_files):
                         mask = part['mask'].astype(bool)
                         to_predict_masks.append(mask)
 
-            if len(to_predict_classes):
-                # reshape the masks as an unique array
-                to_predict_masks = np.array(to_predict_masks)
-                to_predict_masks = np.moveaxis(to_predict_masks, 0, -1)
+        if len(to_predict_classes):
+            # reshape the masks as an unique array
+            to_predict_masks = np.array(to_predict_masks)
+            to_predict_masks = np.moveaxis(to_predict_masks, 0, -1)
 
-                results.append(
-                    (file_name, image_path, to_predict_masks, to_predict_classes))
+            results.append(
+                (file_name, image_path, to_predict_masks, to_predict_classes))
 
     return results, parts_idx
 

@@ -146,7 +146,7 @@ class CarPartConfig(Config):
     NAME = 'car_parts'
 
     GPU_COUNT = 1
-    IMAGES_PER_GPU = 6
+    IMAGES_PER_GPU = 4
 
     # Number of classes (including background)
     NUM_CLASSES = 31  # 26 parts

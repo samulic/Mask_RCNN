@@ -57,9 +57,7 @@ def process_annotation(annotation_path):
 def preprocess_dataset(images_path, images_annotations_files):
     images_path = Path(images_path)
 
-<<<<<<< HEAD
     parts_set = set()
-
 
     # iterate to create the parts set
     for ann_path in tqdm(images_annotations_files):
@@ -83,10 +81,6 @@ def preprocess_dataset(images_path, images_annotations_files):
     parts_list = sorted(list(parts_set))
     idx_parts = dict(enumerate(parts_list, 1))
     parts_idx = {v: k for k, v in idx_parts.items()}
-=======
-    parts_name_idx = dict()
-    id = 1
->>>>>>> 838c4a2bee935cf47f242bf5e888a9c18e22fdaf
 
     results = []
 
@@ -108,17 +102,8 @@ def preprocess_dataset(images_path, images_annotations_files):
                     for part in obj['parts']:
                         # add the part name
                         part_name = part['part_name']
-<<<<<<< HEAD
                         to_predict_classes.append(parts_idx[part_name])
                         # add the mask
-=======
-                        if part_name not in parts_name_idx:
-                            parts_name_idx[part_name] = id
-                            id += 1
-                        # add the id of the class to the mask
-                        to_predict_classes.append(parts_name_idx[part_name])
-                        #add the mask
->>>>>>> 838c4a2bee935cf47f242bf5e888a9c18e22fdaf
                         mask = part['mask'].astype(bool)
                         to_predict_masks.append(mask)
 
@@ -130,7 +115,7 @@ def preprocess_dataset(images_path, images_annotations_files):
             results.append(
                 (file_name, image_path, to_predict_masks, to_predict_classes))
 
-    return results, parts_name_idx
+    return results, parts_idx
 
 
 def prepare_datasets(images_path, images_annotations_files, train_perc=0.9, val_perc=1.0):
@@ -164,7 +149,7 @@ class CarPartConfig(Config):
     NAME = 'car_parts'
 
     GPU_COUNT = 1
-    IMAGES_PER_GPU = 4
+    IMAGES_PER_GPU = 6
 
     # Number of classes (including background)
     NUM_CLASSES = 31  # 26 parts

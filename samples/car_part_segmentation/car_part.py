@@ -123,9 +123,6 @@ def prepare_datasets(images_path, images_annotations_files, train_perc=0.9, val_
     inputs_outputs, parts_idx_dict = preprocess_dataset(
         images_path, images_annotations_files)
 
-    with open('./part_idx.json', 'w') as f:
-        json.dumps(parts_idx_dict, f)
-
     train_split = int(len(inputs_outputs) * train_perc)
     val_split = int(len(inputs_outputs) * val_perc)
     print(f'train size {train_split}, test size {val_split}')
@@ -142,7 +139,7 @@ def prepare_datasets(images_path, images_annotations_files, train_perc=0.9, val_
     dataset_test.load_dataset(parts_idx_dict, inputs_outputs[val_split:])
     dataset_test.prepare()
 
-    return dataset_train, dataset_val, dataset_test,
+    return dataset_train, dataset_val, dataset_test, parts_idx_dict
 
 
 class CarPartConfig(Config):
@@ -226,10 +223,14 @@ if __name__ == '__main__':
     images_path = Path(args.images_path)
     annotations_path = Path(args.annotations_path).glob('*.mat')
 
-    dataset_train, dataset_val, dataset_test = prepare_datasets(
+    dataset_train, dataset_val, dataset_test, parts_idx_dict = prepare_datasets(
         images_path, annotations_path
     )
     print('finished the dataset')
+
+    print(parts_idx_dict)
+    with open(Path(args.checkpoint, 'parts_idx_dict.json'), 'w') as f:
+        json.dump(parts_idx_dict, f)
 
     config = CarPartConfig()
     print(config.display())

@@ -229,7 +229,7 @@ if __name__ == '__main__':
     print('finished the dataset')
 
     print(parts_idx_dict)
-    with open(Path(args.checkpoint, 'parts_idx_dict.json'), 'w') as f:
+    with open('parts_idx_dict.json', 'w') as f:
         json.dump(parts_idx_dict, f)
 
     config = CarPartConfig()

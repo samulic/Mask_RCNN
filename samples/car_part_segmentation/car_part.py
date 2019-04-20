@@ -57,6 +57,7 @@ def process_annotation(annotation_path):
 def preprocess_dataset(images_path, images_annotations_files):
     images_path = Path(images_path)
 
+<<<<<<< HEAD
     parts_set = set()
 
 
@@ -82,6 +83,10 @@ def preprocess_dataset(images_path, images_annotations_files):
     parts_list = sorted(list(parts_set))
     idx_parts = dict(enumerate(parts_list, 1))
     parts_idx = {v: k for k, v in idx_parts.items()}
+=======
+    parts_name_idx = dict()
+    id = 1
+>>>>>>> 838c4a2bee935cf47f242bf5e888a9c18e22fdaf
 
     results = []
 
@@ -103,8 +108,17 @@ def preprocess_dataset(images_path, images_annotations_files):
                     for part in obj['parts']:
                         # add the part name
                         part_name = part['part_name']
+<<<<<<< HEAD
                         to_predict_classes.append(parts_idx[part_name])
                         # add the mask
+=======
+                        if part_name not in parts_name_idx:
+                            parts_name_idx[part_name] = id
+                            id += 1
+                        # add the id of the class to the mask
+                        to_predict_classes.append(parts_name_idx[part_name])
+                        #add the mask
+>>>>>>> 838c4a2bee935cf47f242bf5e888a9c18e22fdaf
                         mask = part['mask'].astype(bool)
                         to_predict_masks.append(mask)
 
@@ -116,10 +130,10 @@ def preprocess_dataset(images_path, images_annotations_files):
             results.append(
                 (file_name, image_path, to_predict_masks, to_predict_classes))
 
-    return results, parts_idx
+    return results, parts_name_idx
 
 
-def prepare_datasets(images_path, images_annotations_files, train_perc=0.7, val_perc=0.8):
+def prepare_datasets(images_path, images_annotations_files, train_perc=0.9, val_perc=1.0):
 
     inputs_outputs, parts_idx_dict = preprocess_dataset(
         images_path, images_annotations_files)
@@ -129,6 +143,7 @@ def prepare_datasets(images_path, images_annotations_files, train_perc=0.7, val_
 
     train_split = int(len(inputs_outputs) * train_perc)
     val_split = int(len(inputs_outputs) * val_perc)
+    print(f'train size {train_split}, test size {val_split}')
 
     dataset_train = CarPartDataset()
     dataset_train.load_dataset(parts_idx_dict, inputs_outputs[:train_split])
@@ -149,7 +164,7 @@ class CarPartConfig(Config):
     NAME = 'car_parts'
 
     GPU_COUNT = 1
-    IMAGES_PER_GPU = 1
+    IMAGES_PER_GPU = 4
 
     # Number of classes (including background)
     NUM_CLASSES = 31  # 26 parts
@@ -210,10 +225,10 @@ if __name__ == '__main__':
                         metavar="/path/to/balloon/images/",
                         help='The directory to load the images')
     parser.add_argument('--annotations_path', required=True,
-                        metavar="/path/to/balloon/annotations/",
-                        help='The directory to load the annotations')
-    parser.add_argument('--weights', required=True,
-                        help='the weights that can be used, values: imagenet or last')
+        metavar="/path/to/balloon/annotations/",
+        help='The directory to load the annotations')
+    parser.add_argument('--weights', required=False,
+        help='the weights that can be used, values: imagenet or last')
     parser.add_argument('--checkpoint', required=True,
                         help='the folder where the checkpoints are saved')
     # parser.
@@ -221,7 +236,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     model_checkpoints = args.checkpoint
-    print('checkointing models in folder {}'.format(model_checkpoints))
+    print('checkpointing models in folder {}'.format(model_checkpoints))
 
     images_path = Path(args.images_path)
     annotations_path = Path(args.annotations_path).glob('*.mat')

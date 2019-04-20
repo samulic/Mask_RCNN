@@ -206,11 +206,14 @@ if __name__ == '__main__':
     parser.add_argument('--images_path', required=True,
                         metavar="/path/to/balloon/images/",
                         help='The directory to load the images')
+
     parser.add_argument('--annotations_path', required=True,
         metavar="/path/to/balloon/annotations/",
         help='The directory to load the annotations')
+
     parser.add_argument('--weights', required=False,
         help='the weights that can be used, values: imagenet or last')
+
     parser.add_argument('--checkpoint', required=True,
                         help='the folder where the checkpoints are saved')
     # parser.

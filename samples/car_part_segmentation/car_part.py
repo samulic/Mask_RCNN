@@ -223,20 +223,21 @@ if __name__ == '__main__':
     model_checkpoints = args.checkpoint
     print('checkpointing models in folder {}'.format(model_checkpoints))
 
+    print('load the dataset ...')
     images_path = Path(args.images_path)
     annotations_path = Path(args.annotations_path).glob('*.mat')
 
     dataset_train, dataset_val, dataset_test, parts_idx_dict = prepare_datasets(
         images_path, annotations_path
     )
-    print('finished the dataset')
+    print('finished loading the dataset')
 
     print(parts_idx_dict)
     with open('parts_idx_dict.json', 'w') as f:
         json.dump(parts_idx_dict, f)
 
     config = CarPartConfig()
-    print(config.display())
+    # print(config.display())
 
     augmentation = iaa.OneOf([
         iaa.Noop(),

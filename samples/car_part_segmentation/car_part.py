@@ -225,7 +225,7 @@ if __name__ == '__main__':
 
     print('load the dataset ...')
     images_path = Path(args.images_path)
-    annotations_path = Path(args.annotations_path).glob('*.mat')
+    annotations_path = list(Path(args.annotations_path).glob('*.mat'))
 
     dataset_train, dataset_val, dataset_test, parts_idx_dict = prepare_datasets(
         images_path, annotations_path

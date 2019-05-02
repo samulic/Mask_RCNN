@@ -96,7 +96,8 @@ class ParallelModel(KM.Model):
                 # Keras expects losses and metrics to be scalars.
                 if K.int_shape(outputs[0]) == ():
                     # Average
-                    m = KL.Lambda(lambda o: tf.add_n(o) / len(outputs), name=name)(outputs)
+                    m = KL.Lambda(lambda o: tf.add_n(
+                        o) / len(outputs), name=name)(outputs)
                 else:
                     # Concatenate
                     m = KL.Concatenate(axis=0, name=name)(outputs)

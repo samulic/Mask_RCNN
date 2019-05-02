@@ -24,9 +24,9 @@ ROOT_DIR = os.path.abspath("../../")
 sys.path.append(ROOT_DIR)  # To find local version of the library
 
 
-def process_annotation(annotation_path):
+def extract_annotations(path):
     # print(annotation_path)
-    annotations = sio.loadmat(annotation_path)['anno']
+    annotations = sio.loadmat(path)['anno']
     objects = annotations[0, 0]['objects']
 
     # list containing all the objects in the image
@@ -54,89 +54,90 @@ def process_annotation(annotation_path):
     return objects_list
 
 
-def preprocess_dataset(images_path, images_annotations_files):
+def preprocess_dataset(images_path, annotations_path, filter={'car'}):
+    """Process the dataset returning a list of tuple with
+        (file_name, image_path, mask_list, class_list)
+
+        Args:
+        images_path -- the folder containing the images of the dataset
+        annotations_path -- the folder containing the annotations for the dataset
+        classes -- a set with the classes to process
+
+        Returns:
+            a tuple with:
+                a list of ennuples (file_name, image_path, mask_list, class_list)
+    """
     images_path = Path(images_path)
 
-    parts_set = set()
+    class_names = set()
+    results = list()
 
-    # iterate to create the parts set
-    for ann_path in tqdm(images_annotations_files):
-        # process the annotations
-        img_objects = process_annotation(ann_path)
+    for path in tqdm(annotations_path):
+        # get the annotations
+        image_objs = extract_annotations(path)
 
-        # get the image path
-        file_name = ann_path.name.replace('mat', 'jpg')
+        # get the immage path
+        file_name = path.name.replace('mat', 'jpg')
         image_path = images_path / file_name
 
-        for obj in img_objects:
-            if obj['class_name'] == 'car':
-                # get the car parts
+        mask_list = []
+        class_list = []
+
+        for obj in image_objs:
+            if obj['class_name'] in filter:
                 if 'parts' in obj:
                     for part in obj['parts']:
-                        # add the part name
+                        # handle the mask
+                        mask_list.append(part['mask'].astype(bool))
+
+                        # handle the class name
                         part_name = part['part_name']
-                        parts_set.add(part_name)
+                        class_list.append(part_name)
+                        class_names.add(part_name)
 
-    # transform to a dictionary of sorted part names
-    parts_list = sorted(list(parts_set))
-    idx_parts = dict(enumerate(parts_list, 1))
-    parts_idx = {v: k for k, v in idx_parts.items()}
-
-    results = []
-
-    for ann_path in tqdm(images_annotations_files):
-        # process the annotations
-        img_objects = process_annotation(ann_path)
-
-        # get the image path
-        file_name = ann_path.name.replace('mat', 'jpg')
-        image_path = images_path / file_name
-
-        to_predict_classes = []
-        to_predict_masks = []
-
-        for obj in img_objects:
-            if obj['class_name'] == 'car':
-                # get the car parts
-                if 'parts' in obj:
-                    for part in obj['parts']:
-                        # add the part name
-                        part_name = part['part_name']
-                        to_predict_classes.append(parts_idx[part_name])
-                        # add the mask
-                        mask = part['mask'].astype(bool)
-                        to_predict_masks.append(mask)
-
-        if len(to_predict_classes):
-            # reshape the masks as an unique array
-            to_predict_masks = np.array(to_predict_masks)
-            to_predict_masks = np.moveaxis(to_predict_masks, 0, -1)
+        if len(mask_list):
+            # reshape the mask list
+            mask_list = np.array(mask_list)
+            mask_list = np.moveaxis(mask_list, 0, -1)
 
             results.append(
-                (file_name, image_path, to_predict_masks, to_predict_classes))
+                (file_name, image_path, mask_list, class_list)
+            )
 
-    return results, parts_idx
+    class_list = sorted(list(class_names))
+    idx_class = dict(enumerate(class_list, 1))
+    class_idx = {v: k for k, v in idx_class.items()}
+
+    results_class_idx = []
+    for file_name, image_path, mask_list, class_list in results:
+        class_idx_list = [class_idx[x] for x in class_list]
+        results_class_idx.append(
+            (file_name, image_path, mask_list, class_idx_list)
+        )
+
+    return results_class_idx, class_idx
 
 
-def prepare_datasets(images_path, images_annotations_files, train_perc=0.9, val_perc=1.0):
+def prepare_datasets(images_path, images_annotations_files,
+                     train_perc=0.9, val_perc=1.0, filter={'car'}):
 
-    inputs_outputs, parts_idx_dict = preprocess_dataset(
-        images_path, images_annotations_files)
+    results, parts_idx_dict = preprocess_dataset(
+        images_path, images_annotations_files, filter)
 
-    train_split = int(len(inputs_outputs) * train_perc)
-    val_split = int(len(inputs_outputs) * val_perc)
-    print(f'train size {train_split}, test size {val_split}')
+    train_split = int(len(results) * train_perc)
+    val_split = int(len(results) * val_perc)
+    print(f'train size {train_split}, val size {val_split - train_split} test size { len(results) - val_split}')
 
     dataset_train = CarPartDataset()
-    dataset_train.load_dataset(parts_idx_dict, inputs_outputs[:train_split])
+    dataset_train.load_dataset(parts_idx_dict, results[:train_split])
     dataset_train.prepare()
     dataset_val = CarPartDataset()
     dataset_val.load_dataset(
-        parts_idx_dict, inputs_outputs[train_split:val_split])
+        parts_idx_dict, results[train_split:val_split])
     dataset_val.prepare()
 
     dataset_test = CarPartDataset()
-    dataset_test.load_dataset(parts_idx_dict, inputs_outputs[val_split:])
+    dataset_test.load_dataset(parts_idx_dict, results[val_split:])
     dataset_test.prepare()
 
     return dataset_train, dataset_val, dataset_test, parts_idx_dict
@@ -146,7 +147,7 @@ class CarPartConfig(Config):
     NAME = 'car_parts'
 
     GPU_COUNT = 1
-    IMAGES_PER_GPU = 4
+    IMAGES_PER_GPU = 1
 
     # Number of classes (including background)
     NUM_CLASSES = 31  # 26 parts
@@ -208,11 +209,11 @@ if __name__ == '__main__':
                         help='The directory to load the images')
 
     parser.add_argument('--annotations_path', required=True,
-        metavar="/path/to/balloon/annotations/",
-        help='The directory to load the annotations')
+                        metavar="/path/to/balloon/annotations/",
+                        help='The directory to load the annotations')
 
     parser.add_argument('--weights', required=False,
-        help='the weights that can be used, values: imagenet or last')
+                        help='the weights that can be used, values: imagenet or last')
 
     parser.add_argument('--checkpoint', required=True,
                         help='the folder where the checkpoints are saved')
@@ -240,16 +241,11 @@ if __name__ == '__main__':
     # print(config.display())
 
     augmentation = iaa.OneOf([
-        iaa.Noop(),
-        iaa.Fliplr(0.5),
-        iaa.Flipud(0.5),
-        iaa.GaussianBlur(sigma=(0.0, 3.0)),
-        iaa.AverageBlur(k=(2, 11)),
-        iaa.Affine(scale=(.5, 2.)),
-        iaa.Affine(scale={"x": (.5, 2.), "y": (.5, 2.)}),
-        iaa.Affine(rotate=(-45, 45)),
-        iaa.Affine(shear=(-16, 16)),
-        iaa.CropAndPad(percent=(-0.25, 0.25)),
+        iaa.Fliplr(.6),
+        iaa.Flipud(.6),
+        iaa.GaussianBlur(sigma=(0.0, 5.0)),
+        iaa.Affine(scale=(1., 2.5), rotate=(-90, 90), shear=(-16, 16)),
+        iaa.ContrastNormalization((0.5, 1.5)),
     ])
 
     with tf.device('/gpu:0'):

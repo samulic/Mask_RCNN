@@ -376,7 +376,8 @@ class Dataset(object):
         """
         # Override this function to load a mask from your dataset.
         # Otherwise, it returns an empty mask.
-        logging.warning("You are using the default load_mask(), maybe you need to define your own one.")
+        logging.warning(
+            "You are using the default load_mask(), maybe you need to define your own one.")
         mask = np.empty([0, 0, 0])
         class_ids = np.empty([0], np.int32)
         return mask, class_ids
@@ -760,8 +761,8 @@ def compute_ap_range(gt_box, gt_class_id, gt_mask,
     for iou_threshold in iou_thresholds:
         ap, precisions, recalls, overlaps =\
             compute_ap(gt_box, gt_class_id, gt_mask,
-                        pred_box, pred_class_id, pred_score, pred_mask,
-                        iou_threshold=iou_threshold)
+                       pred_box, pred_class_id, pred_score, pred_mask,
+                       iou_threshold=iou_threshold)
         if verbose:
             print("AP @{:.2f}:\t {:.3f}".format(iou_threshold, ap))
         AP.append(ap)

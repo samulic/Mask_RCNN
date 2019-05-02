@@ -56,20 +56,7 @@ def display_images(images, titles=None, cols=4, cmap=None, norm=None,
     plt.show()
 
 
-def random_colors(N, bright=True):
-    """
-    Generate random colors.
-    To get visually distinct colors, generate them in HSV space then
-    convert to RGB.
-    """
-    brightness = 1.0 if bright else 0.7
-    hsv = [(i / N, 1, brightness) for i in range(N)]
-    colors = list(map(lambda c: colorsys.hsv_to_rgb(*c), hsv))
-    random.shuffle(colors)
-    return colors
-
-
-def generate_colormap(nelems, scaled=True, bright=True):
+def generate_colormap(nelems, scaled=False, bright=True):
     # Generate colors for drawing bounding boxes.
     brightness = 1. if bright else .7
     hsv_tuples = [(x / nelems, 1., brightness) for x in range(nelems)]
@@ -92,7 +79,8 @@ def apply_mask(image, mask, color, alpha=0.5):
     return image
 
 
-def display_instances(image, boxes, masks, class_ids, class_names, colors=None,
+def display_instances(image, boxes, masks, class_ids, idx_class_names,
+                    colors=None,
                       scores=None, title="",
                       figsize=(16, 16), ax=None,
                       show_mask=True, show_bbox=True,
@@ -101,7 +89,7 @@ def display_instances(image, boxes, masks, class_ids, class_names, colors=None,
     boxes: [num_instance, (y1, x1, y2, x2, class_id)] in image coordinates.
     masks: [height, width, num_instances]
     class_ids: [num_instances]
-    class_names: list of class names of the dataset
+    idx_class_names: dict of idx and class names of the dataset
     scores: (optional) confidence scores for each box
     title: (optional) Figure title
     show_mask, show_bbox: To show masks and bounding boxes or not
@@ -140,15 +128,15 @@ def display_instances(image, boxes, masks, class_ids, class_names, colors=None,
         y1, x1, y2, x2 = boxes[i]
         if show_bbox:
             p = patches.Rectangle((x1, y1), x2 - x1, y2 - y1, linewidth=2,
-                                alpha=0.7, linestyle="dashed",
-                                edgecolor=color, facecolor='none')
+                                  alpha=0.7, linestyle="dashed",
+                                  edgecolor=color, facecolor='none')
             ax.add_patch(p)
 
         # Label
         if not captions:
             class_id = class_ids[i]
             score = scores[i] if scores is not None else None
-            label = class_names[class_id]
+            label = idx_class_names[class_id]
             caption = "{} {:.3f}".format(label, score) if score else label
         else:
             caption = captions[i]
@@ -190,7 +178,7 @@ def display_differences(image,
         iou_threshold=iou_threshold, score_threshold=score_threshold)
     # Ground truth = green. Predictions = red
     colors = [(0, 1, 0, .8)] * len(gt_match)\
-           + [(1, 0, 0, 1)] * len(pred_match)
+        + [(1, 0, 0, 1)] * len(pred_match)
     # Concatenate GT and predictions
     class_ids = np.concatenate([gt_class_id, pred_class_id])
     scores = np.concatenate([np.zeros([len(gt_match)]), pred_score])
@@ -201,7 +189,7 @@ def display_differences(image,
         pred_score[i],
         (overlaps[i, int(pred_match[i])]
             if pred_match[i] > -1 else overlaps[i].max()))
-            for i in range(len(pred_match))]
+        for i in range(len(pred_match))]
     # Set title if not provided
     title = title or "Ground Truth and Detections\n GT=green, pred=red, captions: score/IoU"
     # Display
@@ -390,7 +378,7 @@ def draw_boxes(image, boxes=None, refined_boxes=None,
         _, ax = plt.subplots(1, figsize=(12, 12))
 
     # Generate random colors
-    colors = random_colors(N)
+    colors = generate_colormap(N)
 
     # Show area outside image boundaries.
     margin = image.shape[0] // 10

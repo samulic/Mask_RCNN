@@ -126,7 +126,8 @@ def prepare_datasets(images_path, images_annotations_files,
 
     train_split = int(len(results) * train_perc)
     val_split = int(len(results) * val_perc)
-    print(f'train size {train_split}, val size {val_split - train_split} test size { len(results) - val_split}')
+    print(
+        f'train size {train_split}, val size {val_split - train_split} test size { len(results) - val_split}')
 
     dataset_train = CarPartDataset()
     dataset_train.load_dataset(parts_idx_dict, results[:train_split])

@@ -206,11 +206,11 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='Train Mask R-CNN to detect car parts')
     parser.add_argument('--images_path', required=True,
-                        metavar="/path/to/balloon/images/",
+                        metavar="/path/to/car/images/",
                         help='The directory to load the images')
 
     parser.add_argument('--annotations_path', required=True,
-                        metavar="/path/to/balloon/annotations/",
+                        metavar="/path/to/car/annotations/",
                         help='The directory to load the annotations')
 
     parser.add_argument('--weights', required=False,
@@ -239,13 +239,12 @@ if __name__ == '__main__':
         json.dump(parts_idx_dict, f)
 
     config = CarPartConfig()
-    # print(config.display())
 
     augmentation = iaa.OneOf([
         iaa.GaussianBlur(sigma=(0.0, 3.0)),
         iaa.Affine(scale=(1., 2.5), rotate=(-90, 90), shear=(-16, 16), 
             translate_percent={"x": (-0.2, 0.2), "y": (-0.2, 0.2)}),
-        iaa.ContrastNormalization((0.5, 1.5)),
+        iaa.LinearContrast((0.5, 1.5)),
         iaa.AdditiveGaussianNoise(scale=(0, 0.05*255)),
         iaa.Alpha((0.0, 1.0), iaa.Grayscale(1.0)),
         iaa.LogContrast(gain=(0.6, 1.4)),

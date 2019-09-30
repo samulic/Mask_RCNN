@@ -1,13 +1,20 @@
-from mrcnn import utils
-from mrcnn.config import Config
 import os
 import sys
+
+# Root directory of the project
+ROOT_DIR = os.path.abspath("../../")
+
+# Import Mask RCNN
+sys.path.append(ROOT_DIR)  # To find local version of the library
+
 import random
 import numpy as np
 from pathlib import Path
 import scipy.io as sio
 import tensorflow as tf
-import mrcnn.model as modellib
+import maskrcnn.model as modellib
+from maskrcnn import utils
+from maskrcnn.config import Config
 import imgaug.augmenters as iaa
 from tqdm import tqdm
 import json
@@ -16,13 +23,6 @@ import json
 np.random.seed = 42
 random.seet = 42
 tf.set_random_seed(42)
-
-# Root directory of the project
-ROOT_DIR = os.path.abspath("../../")
-
-# Import Mask RCNN
-sys.path.append(ROOT_DIR)  # To find local version of the library
-
 
 def extract_annotations(path):
     # print(annotation_path)
@@ -242,11 +242,16 @@ if __name__ == '__main__':
     # print(config.display())
 
     augmentation = iaa.OneOf([
-        iaa.Fliplr(.6),
-        iaa.Flipud(.6),
-        iaa.GaussianBlur(sigma=(0.0, 5.0)),
-        iaa.Affine(scale=(1., 2.5), rotate=(-90, 90), shear=(-16, 16)),
+        iaa.GaussianBlur(sigma=(0.0, 3.0)),
+        iaa.Affine(scale=(1., 2.5), rotate=(-90, 90), shear=(-16, 16), 
+            translate_percent={"x": (-0.2, 0.2), "y": (-0.2, 0.2)}),
         iaa.ContrastNormalization((0.5, 1.5)),
+        iaa.AdditiveGaussianNoise(scale=(0, 0.05*255)),
+        iaa.Alpha((0.0, 1.0), iaa.Grayscale(1.0)),
+        iaa.LogContrast(gain=(0.6, 1.4)),
+        iaa.PerspectiveTransform(scale=(0.01, 0.15)),
+        iaa.Clouds(),
+        iaa.Noop(),
     ])
 
     with tf.device('/gpu:0'):

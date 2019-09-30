@@ -19,13 +19,13 @@ import matplotlib.pyplot as plt
 from matplotlib import patches,  lines
 from matplotlib.patches import Polygon
 import IPython.display
-from mrcnn import utils
+from maskrcnn import utils
 
 # Root directory of the project
-ROOT_DIR = os.path.abspath("../")
+# ROOT_DIR = os.path.abspath("../")
 
-# Import Mask RCNN
-sys.path.append(ROOT_DIR)  # To find local version of the library
+# # Import Mask RCNN
+# sys.path.append(ROOT_DIR)  # To find local version of the library
 
 
 ############################################################
@@ -79,10 +79,10 @@ def apply_mask(image, mask, color, alpha=0.5):
     return image
 
 
-def display_instances(image, boxes, masks, class_ids, idx_class_names,
+def display_instances(image, boxes, masks, class_ids, idx_class_names, ax,
                       colors=None,
                       scores=None, title="",
-                      figsize=(16, 16), ax=None,
+                      figsize=(16, 16),
                       show_mask=True, show_bbox=True,
                       captions=None):
     """
@@ -104,18 +104,12 @@ def display_instances(image, boxes, masks, class_ids, idx_class_names,
     else:
         assert boxes.shape[0] == masks.shape[-1] == class_ids.shape[0]
 
-    # If no axis is passed, create one and automatically call show()
-    auto_show = False
-    if not ax:
-        _, ax = plt.subplots(1, figsize=figsize)
-        auto_show = True
-
     # Show area outside image boundaries.
-    height, width = image.shape[:2]
-    ax.set_ylim(height + 10, -10)
-    ax.set_xlim(-10, width + 10)
-    ax.axis('off')
-    ax.set_title(title)
+    # height, width = image.shape[:2]
+    # ax.set_ylim(height + 10, -10)
+    # ax.set_xlim(-10, width + 10)
+    # ax.axis('off')
+    # ax.set_title(title)
 
     masked_image = image.astype(np.uint32).copy()
     for i in range(N):
@@ -160,8 +154,6 @@ def display_instances(image, boxes, masks, class_ids, idx_class_names,
             p = Polygon(verts, facecolor="none", edgecolor=color)
             ax.add_patch(p)
     ax.imshow(masked_image.astype(np.uint8))
-    # if auto_show:
-    #     plt.show()
     return ax
 
 

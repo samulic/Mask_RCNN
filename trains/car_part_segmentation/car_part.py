@@ -118,8 +118,10 @@ def preprocess_dataset(images_path, annotations_path, filter={'car'}):
     return results_class_idx, class_idx
 
 
-def prepare_datasets(images_path, images_annotations_files,
+def prepare_datasets(images_path, images_annotations_path,
                      train_perc=0.9, val_perc=1.0, filter={'car'}):
+
+    images_annotations_files = list(Path(images_annotations_path).glob('*.mat'))
 
     results, parts_idx_dict = preprocess_dataset(
         images_path, images_annotations_files, filter)
@@ -227,7 +229,7 @@ if __name__ == '__main__':
 
     print('load the dataset ...')
     images_path = Path(args.images_path)
-    annotations_path = list(Path(args.annotations_path).glob('*.mat'))
+    annotations_path = Path(args.annotations_path)
 
     dataset_train, dataset_val, dataset_test, parts_idx_dict = prepare_datasets(
         images_path, annotations_path
@@ -240,7 +242,7 @@ if __name__ == '__main__':
 
     config = CarPartConfig()
 
-    augmentation = iaa.OneOf([
+    augmentation = iaa.Sequential([
         iaa.GaussianBlur(sigma=(0.0, 3.0)),
         iaa.Affine(scale=(1., 2.5), rotate=(-90, 90), shear=(-16, 16), 
             translate_percent={"x": (-0.2, 0.2), "y": (-0.2, 0.2)}),
@@ -251,6 +253,13 @@ if __name__ == '__main__':
         iaa.PerspectiveTransform(scale=(0.01, 0.15)),
         iaa.Clouds(),
         iaa.Noop(),
+        iaa.Alpha(
+            (0.0, 1.0),
+            first=iaa.Add(100),
+            second=iaa.Multiply(0.2)),
+        iaa.MotionBlur(k=5),
+        iaa.MultiplyHueAndSaturation((0.5, 1.0), per_channel=True),
+        iaa.AddToSaturation((-50, 50)),
     ])
 
     with tf.device('/gpu:0'):

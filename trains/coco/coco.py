@@ -1,5 +1,5 @@
-from mrcnn import model as modellib, utils
-from mrcnn.config import Config
+from maskrcnn import model as modellib, utils
+from maskrcnn.config import Config
 """
 Mask R-CNN
 Configurations and data loading code for MS COCO.

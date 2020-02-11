@@ -22,7 +22,7 @@ import json
 
 np.random.seed = 42
 random.seet = 42
-tf.set_random_seed(42)
+tf.random.set_seed(42)
 
 def extract_annotations(path):
     # print(annotation_path)
